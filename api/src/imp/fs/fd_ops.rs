@@ -166,3 +166,30 @@ pub fn sys_fcntl(fd: c_int, cmd: c_int, arg: usize) -> LinuxResult<isize> {
         }
     }
 }
+
+pub fn sys_renameat2(
+    old_dirfd: c_int,
+    old_path: UserConstPtr<c_char>,
+    new_dirfd: c_int,
+    new_path: UserConstPtr<c_char>,
+    flags: c_int,
+) -> LinuxResult<isize> {
+    let old_path = old_path.get_as_str()?;
+    let new_path = new_path.get_as_str()?;
+
+    debug!(
+        "sys_renameat2 <= old_dirfd: {}, old_path: {}, new_dirfd: {}, new_path: {}, flags: {}",
+        old_dirfd, old_path, new_dirfd, new_path, flags
+    );
+
+    // TODO: Implement these flags if needed
+    // RENAME_EXCHANGE
+    // RENAME_NOREPLACE
+    // RENAME_WHITEOUT
+    match flags {
+        0 => axfs::api::rename(old_path, new_path).map_err(|_| LinuxError::EXDEV)?,
+        _ => return Err(LinuxError::EINVAL),
+    }
+
+    Ok(0)
+}
