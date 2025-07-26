@@ -2,7 +2,12 @@
 
 use core::ffi::CStr;
 
-use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
+use alloc::vec;
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+    vec::Vec,
+};
 use axerrno::{AxError, AxResult};
 use axhal::{
     mem::virt_to_phys,
@@ -160,6 +165,7 @@ pub fn load_user_app(
         // Set the first argument to the path of the user app.
         let mut new_args = vec![interp_path];
         new_args.extend_from_slice(args);
+        new_args[1] = path.to_string();
         return load_user_app(uspace, &new_args[0], &new_args, envs);
     }
 
