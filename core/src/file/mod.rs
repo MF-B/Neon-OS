@@ -5,11 +5,13 @@ use alloc::{
     string::{String, ToString},
 };
 
+pub mod dev;
 pub mod proc;
 
 /// Initialize the filesystem by setting up /proc directories.
 pub fn init_filesystem() {
     proc::init_procfs();
+    dev::init_devfs();
 }
 
 /// Resolve a path by following all symbolic links to get the final target.

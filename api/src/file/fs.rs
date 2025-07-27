@@ -62,14 +62,15 @@ impl FileLike for File {
     }
 
     fn poll(&self) -> LinuxResult<PollState> {
-        Ok(PollState {
-            readable: true,
-            writable: true,
-        })
+        Ok(self.inner().poll()?)
     }
 
     fn set_nonblocking(&self, _nonblocking: bool) -> LinuxResult {
         Ok(())
+    }
+
+    fn ioctl(&self, op: usize, argp: *mut u8) -> LinuxResult<isize> {
+        Ok(self.inner().ioctl(op, argp)?)
     }
 }
 

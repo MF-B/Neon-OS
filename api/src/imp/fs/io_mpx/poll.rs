@@ -69,11 +69,11 @@ pub fn sys_poll(fds: UserPtr<pollfd>, nfds: usize, timeout_ms: c_int) -> LinuxRe
             return Ok(ready_count);
         }
 
+        axtask::yield_now();
+
         if deadline.is_some_and(|ddl| wall_time() >= ddl) {
             return Ok(0);
         }
-
-        axtask::sleep(Duration::from_millis(1));
     }
 }
 
@@ -149,10 +149,10 @@ pub fn sys_ppoll(
             return Ok(ready_count);
         }
 
+        axtask::yield_now();
+
         if deadline.is_some_and(|ddl| wall_time() >= ddl) {
             return Ok(0);
         }
-
-        axtask::sleep(Duration::from_millis(1));
     }
 }

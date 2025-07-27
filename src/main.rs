@@ -14,6 +14,7 @@ mod syscall;
 #[unsafe(no_mangle)]
 fn main() {
     starry_core::file::init_filesystem();
+    starry_api::file::init_stdio();
     // Create a init process
     axprocess::Process::new_init(axtask::current().id().as_u64() as _).build();
 

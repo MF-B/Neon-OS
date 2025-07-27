@@ -1,11 +1,10 @@
 mod fs;
 mod net;
 mod pipe;
-mod stdio;
 
 use core::{any::Any, ffi::c_int};
 
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{string::ToString, sync::Arc, vec::Vec};
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
 use axns::{ResArc, def_resource};
@@ -105,6 +104,9 @@ pub trait FileLike: Send + Sync {
     fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
     fn poll(&self) -> LinuxResult<PollState>;
     fn set_nonblocking(&self, nonblocking: bool) -> LinuxResult;
+    fn ioctl(&self, _op: usize, _argp: *mut u8) -> LinuxResult<isize> {
+        Err(LinuxError::ENOSYS)
+    }
 
     fn from_fd(fd: c_int) -> LinuxResult<Arc<Self>>
     where
@@ -172,17 +174,34 @@ pub fn close_file_like(fd: c_int) -> LinuxResult {
     Ok(())
 }
 
-#[ctor_bare::register_ctor]
-fn init_stdio() {
+pub fn init_stdio() {
     let mut fd_table = flatten_objects::FlattenObjects::new();
+
+    let fstdin =
+        axfs::fops::File::open("/dev/stdin", &axfs::fops::OpenOptions::new().set_read(true))
+            .unwrap();
+    let fstdout = axfs::fops::File::open(
+        "/dev/stdout",
+        &axfs::fops::OpenOptions::new().set_write(true),
+    )
+    .unwrap();
+    let fstderr = axfs::fops::File::open(
+        "/dev/stderr",
+        &axfs::fops::OpenOptions::new().set_write(true),
+    )
+    .unwrap();
+    let stdin = File::new(fstdin, "/dev/stdin".to_string());
+    let stdout = File::new(fstdout, "/dev/stdout".to_string());
+    let stderr = File::new(fstderr, "/dev/stderr".to_string());
+
     fd_table
-        .add_at(0, Arc::new(stdio::stdin()) as _)
+        .add_at(0, Arc::new(stdin) as _)
         .unwrap_or_else(|_| panic!()); // stdin
     fd_table
-        .add_at(1, Arc::new(stdio::stdout()) as _)
+        .add_at(1, Arc::new(stdout) as _)
         .unwrap_or_else(|_| panic!()); // stdout
     fd_table
-        .add_at(2, Arc::new(stdio::stdout()) as _)
+        .add_at(2, Arc::new(stderr) as _)
         .unwrap_or_else(|_| panic!()); // stderr
     FD_TABLE.init_new(spin::RwLock::new(fd_table));
 }
