@@ -1,0 +1,11 @@
+/musl/busybox ln -s /musl/busybox /bin/ln
+/bin/ln -s /musl/lib/libc.so /lib/ld-linux-riscv64-lp64.so.1 
+/bin/ln -s /musl/lib/libc.so /lib64/ld-linux-loongarch-lp64d.so.1 
+/musl/busybox sh /musl/splice_testcode.sh
+/musl/busybox sh /musl/interrupts_testcode.sh
+/musl/busybox sh /musl/copy-file-range_testcode.sh
+/bin/ln -s /glibc/lib/libc.so /lib/ld-linux-riscv64-lp64.so.1 
+/bin/ln -s /glibc/lib/libc.so /lib64/ld-linux-loongarch-lp64d.so.1
+/musl/busybox sh /glibc/splice_testcode.sh
+/musl/busybox sh /glibc/interrupts_testcode.sh
+/musl/busybox sh /glibc/copy-file-range_testcode.sh

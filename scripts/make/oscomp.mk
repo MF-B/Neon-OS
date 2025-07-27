@@ -1,7 +1,7 @@
 # Command to build and run testcases for oscomp
 
 oscomp_binary: ax_root defconfig
-	@cp -r $(PWD)/bin/* /root/.cargo/bin
+#	@cp -r $(PWD)/bin/* /root/.cargo/bin
 	@make -C $(AX_ROOT) A=$(PWD) EXTRA_CONFIG=$(EXTRA_CONFIG) build
 	@if [ "$(ARCH)" = "riscv64" ]; then \
 		cp $(OUT_BIN) kernel-rv; \
@@ -11,10 +11,10 @@ oscomp_binary: ax_root defconfig
 
 oscomp_build:
 	# Build for os competition
-	# For OS 2025 competition, we use nightly-2025-01-18 toolchain
+	# For OS 2025 competition, we use nightly-2025-05-20 toolchain
 	# Notes: We don't ensure the system is available for this toolchain.
-	RUSTUP_TOOLCHAIN=nightly-2025-01-18 $(MAKE) oscomp_binary ARCH=riscv64 AX_TESTCASE=oscomp BUS=mmio FEATURES=lwext4_rs 
-	RUSTUP_TOOLCHAIN=nightly-2025-01-18 $(MAKE) oscomp_binary ARCH=loongarch64 AX_TESTCASE=oscomp FEATURES=lwext4_rs
+	RUSTUP_TOOLCHAIN=nightly-2025-05-20 $(MAKE) oscomp_binary ARCH=riscv64 AX_TESTCASE=oscomp BUS=mmio FEATURES=lwext4_rs,fp_simd LOG=off
+	RUSTUP_TOOLCHAIN=nightly-2025-05-20 $(MAKE) oscomp_binary ARCH=loongarch64 AX_TESTCASE=oscomp FEATURES=lwext4_rs,fp_simd LOG=off
 
 oscomp_test: defconfig
 	# Test for os competition online
