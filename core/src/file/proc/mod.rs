@@ -11,4 +11,7 @@ pub fn init_procfs() {
 
     let self_exe = selfs::SelfExe;
     let _ = procfs.add_node("exe", Arc::new(self_exe));
+    
+    let self_fd_dir = selfs::SelfFdDir;
+    let _ = procfs.add_node("fd", Arc::new(self_fd_dir));
 }

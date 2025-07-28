@@ -128,10 +128,10 @@ fn console_write_bytes(buf: &[u8]) -> AxResult<usize> {
     Ok(buf.len())
 }
 
-struct TtyStdinRaw;
-struct TtyStdoutRaw;
+/// Represents the standard input (stdin) and output (stdout) for TTY devices
+pub struct TtyRaw;
 
-impl Read for TtyStdinRaw {
+impl Read for TtyRaw {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
         let mut read_len = 0;
         while read_len < buf.len() {
@@ -145,7 +145,7 @@ impl Read for TtyStdinRaw {
     }
 }
 
-impl Write for TtyStdoutRaw {
+impl Write for TtyRaw {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
         console_write_bytes(buf)
     }
@@ -155,30 +155,60 @@ impl Write for TtyStdoutRaw {
     }
 }
 
-/// Represents the standard input (stdin) and output (stdout) for TTY devices
-pub struct TtyStdin {
-    inner: &'static Mutex<BufReader<TtyStdinRaw>>,
+/// Represents a TTY device in the device filesystem
+pub struct Tty {
+    stdin: Mutex<BufReader<TtyRaw>>,
+    stdout: Mutex<TtyRaw>,
     state: Mutex<TtyState>,
 }
 
-impl TtyStdin {
+impl Tty {
+    /// Creates a new TTY device with the specified type
+    pub fn new() -> Tty {
+        Tty {
+            stdin: Mutex::new(BufReader::new(TtyRaw)),
+            stdout: Mutex::new(TtyRaw),
+            state: Mutex::new(TtyState::new()),
+        }
+    }
+
     fn read_blocked(&self, buf: &mut [u8]) -> AxResult<usize> {
-        let read_len = self.inner.lock().read(buf)?;
+        let read_len = self.stdin.lock().read(buf)?;
         if buf.is_empty() || read_len > 0 {
             return Ok(read_len);
         }
         loop {
-            let read_len = self.inner.lock().read(buf)?;
+            let read_len = self.stdin.lock().read(buf)?;
             if read_len > 0 {
                 return Ok(read_len);
             }
             axtask::yield_now();
         }
     }
+}
 
-    /// Handles polling for TTY stdin.
-    pub fn poll(&self) -> VfsResult<PollState> {
-        let mut inner = self.inner.lock();
+impl Default for Tty {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl VfsNodeOps for Tty {
+    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
+        let perm = VfsNodePerm::from_bits_truncate(0o777);
+        Ok(VfsNodeAttr::new(perm, VfsNodeType::CharDevice, 0, 0))
+    }
+
+    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+        self.read_blocked(buf)
+    }
+
+    fn write_at(&self, _offset: u64, buf: &[u8]) -> VfsResult<usize> {
+        self.stdout.lock().write(buf)
+    }
+
+    fn poll(&self) -> VfsResult<PollState> {
+        let mut inner = self.stdin.lock();
         if inner.has_data_left()? {
             return Ok(PollState {
                 readable: true,
@@ -200,142 +230,8 @@ impl TtyStdin {
         }
     }
 
-    /// Handles ioctl commands for TTY stdin.
-    pub fn ioctl(&self, cmd: usize, arg: *mut u8) -> VfsResult<isize> {
-        self.state.lock().ioctl(cmd as u32, arg)
-    }
-}
-
-/// Represents the standard output (stdout) for TTY devices
-pub struct TtyStdout {
-    inner: &'static Mutex<TtyStdoutRaw>,
-    state: Mutex<TtyState>,
-}
-
-impl TtyStdout {
-    /// Handles polling for TTY stdout.
-    pub fn poll(&self) -> VfsResult<PollState> {
-        Ok(PollState {
-            readable: false,
-            writable: true,
-        })
-    }
-
-    /// Handles ioctl commands for TTY stdout.
-    pub fn ioctl(&self, cmd: usize, arg: *mut u8) -> VfsResult<isize> {
-        self.state.lock().ioctl(cmd as u32, arg)
-    }
-
-    fn write_bytes(&self, buf: &[u8]) -> VfsResult<usize> {
-        self.inner.lock().write(buf)
-    }
-}
-
-fn tty_stdin() -> TtyStdin {
-    static INSTANCE: Mutex<BufReader<TtyStdinRaw>> = Mutex::new(BufReader::new(TtyStdinRaw));
-    TtyStdin {
-        inner: &INSTANCE,
-        state: Mutex::new(TtyState::new()),
-    }
-}
-
-fn tty_stdout() -> TtyStdout {
-    static INSTANCE: Mutex<TtyStdoutRaw> = Mutex::new(TtyStdoutRaw);
-    TtyStdout {
-        inner: &INSTANCE,
-        state: Mutex::new(TtyState::new()),
-    }
-}
-
-/// Represents the type of TTY device
-pub enum TtyType {
-    /// Standard input (stdin)
-    Stdin,
-    /// Standard output (stdout)
-    Stdout,
-}
-
-/// Represents a TTY device in the device filesystem
-pub struct Tty {
-    tty_type: TtyType,
-}
-
-impl Tty {
-    /// Creates a new TTY device with the specified type
-    pub fn new(tty_type: TtyType) -> Tty {
-        Tty { tty_type }
-    }
-
-    /// Returns the TTY type
-    pub fn stdin() -> Tty {
-        Self::new(TtyType::Stdin)
-    }
-
-    /// Returns the TTY type for stdout
-    pub fn stdout() -> Tty {
-        Self::new(TtyType::Stdout)
-    }
-}
-
-impl Default for Tty {
-    fn default() -> Self {
-        Self::new(TtyType::Stdin)
-    }
-}
-
-impl VfsNodeOps for Tty {
-    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
-        let perm = match self.tty_type {
-            TtyType::Stdin => VfsNodePerm::from_bits_truncate(0o444), // r--r--r--
-            TtyType::Stdout => VfsNodePerm::from_bits_truncate(0o220), // -w--w----
-        };
-        Ok(VfsNodeAttr::new(perm, VfsNodeType::CharDevice, 0, 0))
-    }
-
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
-        match self.tty_type {
-            TtyType::Stdin => {
-                let stdin = tty_stdin();
-                stdin.read_blocked(buf)
-            }
-            TtyType::Stdout => ax_err!(PermissionDenied), // stdout can't be read
-        }
-    }
-
-    fn write_at(&self, _offset: u64, buffer: &[u8]) -> VfsResult<usize> {
-        match self.tty_type {
-            TtyType::Stdin => ax_err!(PermissionDenied), // stdin can't be written
-            TtyType::Stdout => {
-                let stdout = tty_stdout();
-                stdout.write_bytes(buffer)
-            }
-        }
-    }
-
-    fn poll(&self) -> VfsResult<PollState> {
-        match self.tty_type {
-            TtyType::Stdin => {
-                let stdin = tty_stdin();
-                stdin.poll()
-            }
-            TtyType::Stdout => {
-                let stdout = tty_stdout();
-                stdout.poll()
-            }
-        }
-    }
-
-    fn ioctl(&self, cmd: usize, arg: *mut u8) -> VfsResult<isize> {
-        match self.tty_type {
-            TtyType::Stdin => {
-                let stdin = tty_stdin();
-                Ok(stdin.ioctl(cmd, arg)?)
-            }
-            TtyType::Stdout => {
-                let stdout = tty_stdout();
-                Ok(stdout.ioctl(cmd, arg)?)
-            }
-        }
+    fn ioctl(&self, op: usize, arg: *mut u8) -> VfsResult<isize> {
+        self.state.lock().ioctl(op as u32, arg)
     }
 
     axfs_vfs::impl_vfs_non_dir_default! {}
