@@ -1,7 +1,7 @@
 # Command to build and run testcases for oscomp
 
 oscomp_binary: ax_root defconfig
-	@cp -r $(PWD)/bin/* /root/.cargo/bin
+#	@cp -r $(PWD)/bin/* /root/.cargo/bin
 	@make -C $(AX_ROOT) A=$(PWD) EXTRA_CONFIG=$(EXTRA_CONFIG) build
 	@if [ "$(ARCH)" = "riscv64" ]; then \
 		cp $(OUT_BIN) kernel-rv; \
@@ -33,5 +33,9 @@ endef
 oscomp_run: ax_root defconfig
 	$(call load_img)
 	$(MAKE) AX_TESTCASE=oscomp BLK=y NET=y FEATURES=fp_simd,lwext4_rs LOG=$(LOG) run
+
+oscomp_run_build: ax_root defconfig
+	$(call load_img)
+	$(MAKE) AX_TESTCASE=oscomp BLK=y NET=y FEATURES=fp_simd,lwext4_rs,page-alloc-4g,driver-ahci LOG=$(LOG) build
 
 .PHONY: oscomp_binary oscomp_build oscomp_test oscomp_run
