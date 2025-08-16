@@ -232,5 +232,5 @@ If you want to add **executable file** directly, the specific steps are as follo
 
       This completes the execution of the custom test case.
 
-tftp 0x9000000002000000 Neon-OS_loongarch64-ls2k1000la.bin
-go 0x9000000002000000
+tftp 0x9000000090000000 Neon-OS_loongarch64-ls2k1000la.bin
+go 0x9000000090000000

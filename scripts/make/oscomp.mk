@@ -36,6 +36,6 @@ oscomp_run: ax_root defconfig
 
 oscomp_run_build: ax_root defconfig
 	$(call load_img)
-	$(MAKE) AX_TESTCASE=oscomp BLK=y NET=y FEATURES=fp_simd,lwext4_rs,page-alloc-4g,driver-ahci LOG=$(LOG) build
+	$(MAKE) AX_TESTCASE=oscomp BLK=y NET=n FEATURES=lwext4_rs,page-alloc-4g,driver-ahci LOG=$(LOG) build
 
 .PHONY: oscomp_binary oscomp_build oscomp_test oscomp_run

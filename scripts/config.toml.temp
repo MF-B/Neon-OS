@@ -1,31 +1,13 @@
 [patch.'https://github.com/oscomp/arceos.git']
-axfeat = { path = "%AX_ROOT%/api/axfeat" }
+axfeat = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/api/axfeat" }
 
-axconfig = { path = "%AX_ROOT%/modules/axconfig" }
-axfs = { path = "%AX_ROOT%/modules/axfs" }
-axhal = { path = "%AX_ROOT%/modules/axhal" }
-axlog = { path = "%AX_ROOT%/modules/axlog" }
-axmm = { path = "%AX_ROOT%/modules/axmm" }
-axnet = { path = "%AX_ROOT%/modules/axnet" }
-axns = { path = "%AX_ROOT%/modules/axns" }
-axruntime = { path = "%AX_ROOT%/modules/axruntime" }
-axsync = { path = "%AX_ROOT%/modules/axsync" }
-axtask = { path = "%AX_ROOT%/modules/axtask" }
-
-[build]
-rustflags = [
-    "-C", "target-feature=-ual",
-    "-C", "force-unwind-tables=no",
-    "-C", "opt-level=2",
-    "-C", "codegen-units=1"
-]
-
-[target.loongarch64-unknown-none]
-rustflags = [
-    "-C", "target-feature=-ual",
-    "-C", "force-unwind-tables=no", 
-    "-C", "opt-level=2",
-    "-C", "codegen-units=1",
-    "-C", "relocation-model=static",
-    "-C", "link-arg=-Wl,--no-relax"
-]
+axconfig = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axconfig" }
+axfs = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axfs" }
+axhal = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axhal" }
+axlog = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axlog" }
+axmm = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axmm" }
+axnet = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axnet" }
+axns = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axns" }
+axruntime = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axruntime" }
+axsync = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axsync" }
+axtask = { path = "/home/mf1bzz/code/os/Neon-OS/.arceos/modules/axtask" }
